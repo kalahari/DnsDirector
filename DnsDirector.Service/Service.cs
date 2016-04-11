@@ -31,7 +31,7 @@ namespace DnsDirector.Service
 
         protected override void OnStart(string[] args)
         {
-            log.InfoFormat("OnStart({0})", args == null ? "" : string.Join(", ", args.Select(arg => $"\"{arg}\"")));
+            log.Info($"OnStart({(args == null ? "" : string.Join(", ", args.Select(arg => $"\"{arg}\"")))})");
             server.Start();
             network.PollInterfaces();
         }

@@ -79,16 +79,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Installer.cs" />
-    <Compile Include="NetworkState.cs" />
+    <Compile Include="Config.cs" />
+    <Compile Include="Installer.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Network.cs" />
-    <Compile Include="NetworkManagement.cs" />
-    <Compile Include="NetworkAdapter.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="NetworkAdapterConfiguration.cs">
-      <SubType>Component</SubType>
-    </Compile>
     <Compile Include="Router.cs" />
     <Compile Include="TestNetwork.cs" />
     <Compile Include="Service.cs">
@@ -113,6 +108,11 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="DnsDirector.Service.log4net.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
