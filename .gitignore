@@ -1,0 +1,9 @@
+/.vs/
+/DnsDirector/bin/
+/DnsDirector/obj/
+/packages/
+*.user
+DnsDirector.Service/bin/
+DnsDirector.Service/obj/
+DnsDirector.Tray/bin/
+DnsDirector.Tray/obj/
