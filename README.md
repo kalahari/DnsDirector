@@ -2,7 +2,7 @@
 DIrect DNS queries to different servers by pattern matching the domain
 
 ## Configuration
-All configuration is in DnsDirectorRoutes.yaml
+All configuration is in `DnsDirectorRoutes.yaml`
 
 ```yaml
 # Configuration for the DnsDirector service
@@ -34,7 +34,8 @@ routes:
   example.com: ['4.2.2.3', '4.2.2.4']
 ```
 
-### Copyright 2016 Blake Mitchell &lt;blake@barkingspoon.com&gt;
+## License
+Copyright 2016 Blake Mitchell &lt;blake@barkingspoon.com&gt;
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
