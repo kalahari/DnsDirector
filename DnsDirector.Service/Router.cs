@@ -20,22 +20,44 @@ namespace DnsDirector.Service
             this.network = network;
         }
 
-        public List<IPAddress> GetResolvers(string name)
+        public IList<IPAddress> GetResolvers(string name)
         {
-            name = name.ToLowerInvariant();
-            log.Debug($"Getting resolvers for: {name}");
-            var parts = name.Split('.').ToList();
-            while (parts.Any())
+            name = name.ToLowerInvariant().Trim('.');
+            using (LogicalThreadContext.Stacks["NDC"].Push(name))
             {
-                log.Debug($"Testing name: ")
-                var test = string.Join(".", parts);
-                if (config.DnsRoutes.ContainsKey(test))
+                log.Debug($"Getting resolvers");
+                var parts = name.Split('.').AsEnumerable();
+                while (parts.Any())
                 {
-
-                    return config.DnsRoutes[test];
+                    var test = string.Join(".", parts);
+                    log.Debug($"Testing name: {test}");
+                    if (config.DnsRoutes.ContainsKey(test))
+                    {
+                        var resolvers = config.DnsRoutes[test];
+                        log.Debug($"Found resolvers for: {test} [{string.Join(", ", resolvers)}]");
+                        return resolvers;
+                    }
+                    parts = parts.Skip(1);
                 }
+                log.Debug("No matching route");
+                if (config.UsePublicDefaultServers)
+                {
+                    log.Debug($"Using public default resolvers: [{string.Join(", ", Config.PublicDnsServers)}]");
+                    return Config.PublicDnsServers;
+                }
+                if (config.DefaultDnsServers.Any())
+                {
+                    log.Debug($"Using config default resolvers: [{string.Join(", ", config.DefaultDnsServers)}]");
+                    return config.DefaultDnsServers;
+                }
+                if (network.DefaultServers.Any())
+                {
+                    log.Debug($"Using system default resolvers: [{string.Join(", ", network.DefaultServers)}]");
+                    return network.DefaultServers;
+                }
+                log.Debug($"No system/config default resolvers found, using public default resolvers: [{string.Join(", ", Config.PublicDnsServers)}]");
+                return Config.PublicDnsServers;
             }
-            return null;
         }
     }
 }

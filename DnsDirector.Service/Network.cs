@@ -13,7 +13,8 @@ namespace DnsDirector.Service
     public class Network
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(Network));
-        private List<IPAddress> defaultServers = new List<IPAddress>();
+        public List<IPAddress> DefaultServers { get; protected set; } = new List<IPAddress>();
+        //private Dictionary<uint, string> setDnsResultValues;
 
         public Network()
         {
@@ -36,54 +37,92 @@ namespace DnsDirector.Service
 
         public void PollInterfaces()
         {
-            // https://msdn.microsoft.com/en-us/library/windows/desktop/aa394217%28v=vs.85%29.aspx
-            var adapterConfigs = new ManagementClass("Win32_NetworkAdapterConfiguration")
-                .GetInstances()
-                .Cast<ManagementObject>()
-                .Where(ac => (bool)ac["IPEnabled"])
-                .ToList();
-            log.Info($"Polling {adapterConfigs.Count()} IP enabled interfaces");
+            log.Debug("PollInterfaces()");
             var newServers = new List<IPAddress>();
-            foreach (var adapter in adapterConfigs)
+            EachInterface((adapter, dnsResolvers) =>
             {
-                PollAdapter(adapter, newServers);
-            }
-            defaultServers = newServers;
+                if (dnsResolvers.Any())
+                {
+                    var notLoopbackServers = dnsResolvers.Where(s => !s.Equals(IPAddress.Loopback));
+                    var newDefaultServers = notLoopbackServers.Where(s => !newServers.Contains<IPAddress>(s));
+                    log.Info($"Adding servers to default group: {string.Join(", ", newDefaultServers)}");
+                    newServers.AddRange(newDefaultServers);
+                    if (!dnsResolvers[0].Equals(IPAddress.Loopback))
+                    {
+                        ApplyLoopbackResolver(adapter, notLoopbackServers);
+                    }
+                }
+            });
+            DefaultServers = newServers;
         }
 
-        private static void PollAdapter(ManagementObject adapter, List<IPAddress> newServers)
+        public void RevertInterfaces()
         {
-            var idx = (uint)adapter["Index"];
-            using (LogicalThreadContext.Stacks["NDC"].Push(idx.ToString("3")))
+            log.Debug("RevertInterfaces()");
+            EachInterface((adapter, dnsResolvers) =>
             {
-                log.Info($"Description: {(string)adapter["Description"]}");
-                var dnsServers = (string[])adapter["DNSServerSearchOrder"];
-                log.Debug($"DNS Servers: {string.Join(", ", dnsServers)}");
-                var serverAddreses = dnsServers.Select(s => IPAddress.Parse(s)).ToList();
-                if (serverAddreses.Any())
+                if (dnsResolvers.Any() && dnsResolvers.First().Equals(IPAddress.Loopback))
                 {
-                    var notLoopbackServers = serverAddreses.Where(s => !s.Equals(IPAddress.Loopback));
-                    log.Info($"Adding servers to default group: {string.Join(", ", notLoopbackServers)}");
-                    newServers.AddRange(notLoopbackServers);
-                    if (!serverAddreses[0].Equals(IPAddress.Loopback))
-                    {
-                        //ApplyLoopbackResolver(adapter, notLoopbackServers);
-                    }
+                    log.Info("Removing loopback as primary DNS server");
+                    SetDnsResolvers(adapter, dnsResolvers.Skip(1));
+                }
+            });
+        }
+
+        private void ApplyLoopbackResolver(ManagementObject adapter, IEnumerable<IPAddress> notLoopbackServers)
+        {
+            log.Info("Adding loopback as primary DNS server");
+            SetDnsResolvers(adapter, new List<IPAddress>() { IPAddress.Loopback }.Concat(notLoopbackServers));
+        }
+
+        private void EachInterface(Action<ManagementObject, List<IPAddress>> handleInterface)
+        {
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/aa394217%28v=vs.85%29.aspx
+            var mc = new ManagementClass("Win32_NetworkAdapterConfiguration");
+            //if (setDnsResultValues == null)
+            //{
+            //    var qdc = mc.Methods.Cast<MethodData>()
+            //        .Single(md => md.Name == "SetDNSServerSearchOrder")
+            //        .Qualifiers
+            //        .Cast<QualifierData>();
+            //    log.Debug($"SetDNSServerSearchOrder Qualifiers: {string.Join(", ", qdc.Select(q => q.Name))}");
+            //    var keys = (string[])qdc.Single(qd => qd.Name == "ValueMap").Value;
+            //    var vals = (string[])qdc.Single(qd => qd.Name == "Values").Value;
+            //    setDnsResultValues = Enumerable.Range(0, keys.Length).ToDictionary(i => uint.Parse(keys[i]), i => vals[i]);
+            //}
+            var adapterConfigs = mc.GetInstances().Cast<ManagementObject>().Where(ac => (bool)ac["IPEnabled"]).ToList();
+            log.Info($"Iterating {adapterConfigs.Count()} IP enabled interfaces");
+            foreach (var adapter in adapterConfigs)
+            {
+                var idx = (uint)adapter["Index"];
+                using (LogicalThreadContext.Stacks["NDC"].Push(idx.ToString()))
+                {
+                    log.Info($"Description: {(string)adapter["Description"]}");
+                    var dnsServers = (string[])adapter["DNSServerSearchOrder"] ?? new string[0];
+                    log.Debug($"DNS Servers: {string.Join(", ", dnsServers)}");
+                    var serverAddreses = dnsServers.Select(s => IPAddress.Parse(s)).ToList();
+                    handleInterface(adapter, serverAddreses);
                 }
             }
         }
 
-        private static void ApplyLoopbackResolver(ManagementObject adapter, IEnumerable<IPAddress> notLoopbackServers)
+        private void SetDnsResolvers(ManagementObject adapter, IEnumerable<IPAddress> resolvers)
         {
-            log.Info("Adding loopback as primary DNS server");
             try
             {
+                log.Info($"Setting DNS resolvers: {string.Join(", ", resolvers)}");
                 var param = adapter.GetMethodParameters("SetDNSServerSearchOrder");
-                param["DNSServerSearchOrder"] = new List<IPAddress>() { IPAddress.Loopback }
-                    .Concat(notLoopbackServers)
+                param["DNSServerSearchOrder"] = resolvers
                     .Select(a => a.ToString())
                     .ToArray();
-                adapter.InvokeMethod("SetDNSServerSearchOrder", param, null);
+                var result = (uint)adapter.InvokeMethod("SetDNSServerSearchOrder", param, null)["ReturnValue"];
+                log.Debug($"DNSServerSearchOrder got result: {result}");
+                if(result != 0)
+                {
+                    var ex = new Exception($"DNSServerSearchOrder got result: {result}, expected: 0");
+                    ex.Data.Add("ReturnValue", result);
+                    throw ex;
+                }
             }
             catch (Exception ex)
             {

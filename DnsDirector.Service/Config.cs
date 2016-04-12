@@ -15,7 +15,7 @@ namespace DnsDirector.Service
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(Config));
         private static readonly string configFile = "DnsDirectorRoutes.yaml";
-        private static readonly IList<IPAddress> publicDnsServers = new List<IPAddress>()
+        public static readonly IList<IPAddress> PublicDnsServers = new List<IPAddress>()
         {
             IPAddress.Parse("4.2.2.4"), // Level 3
             IPAddress.Parse("8.8.4.4"), // Google
@@ -79,7 +79,7 @@ namespace DnsDirector.Service
                 UsePublicDefaultServers = data.UsePublicDefaultServers;
                 changed = true;
                 DefaultDnsServers = newDefaultServers;
-                
+                DnsRoutes = newRoutes;
                 configured = true;
             }
             catch (Exception ex)

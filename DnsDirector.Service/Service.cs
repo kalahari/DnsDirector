@@ -26,7 +26,15 @@ namespace DnsDirector.Service
         public void ConsoleStart()
         {
             log.Warn("ConsoleStart()");
-            OnStart(null);
+            Startup();
+            Console.WriteLine("Press [Enter] key to exit.");
+            Task.Run(() =>
+            {
+                Console.ReadLine();
+                log.Warn("Got line on console.");
+            }).Wait();
+            Shutdown();
+            log.Warn("ConsoleStart: void");
         }
 
         protected override void OnStart(string[] args)
@@ -34,12 +42,8 @@ namespace DnsDirector.Service
             try
             {
                 log.Info($"OnStart({(args == null ? "" : string.Join(", ", args.Select(arg => $"\"{arg}\"")))})");
-                config = config ?? new Config();
-                config.UpdateConfig();
-                server = server ?? new Server();
-                server.Start();
-                network = network ?? new Network();
-                network.PollInterfaces();
+                base.OnStart(args);
+                Startup();
             }
             catch (Exception ex)
             {
@@ -48,12 +52,25 @@ namespace DnsDirector.Service
             }
         }
 
+        private void Startup()
+        {
+            log.Debug("Startup()");
+            config = config ?? new Config();
+            network = network ?? new Network();
+            router = router ?? new Router(config, network);
+            server = server ?? new Server(router);
+            config.UpdateConfig();
+            server.Start();
+            network.PollInterfaces();
+        }
+
         protected override void OnStop()
         {
-            log.InfoFormat("OnStop()");
+            log.Info("OnStop()");
             try
             {
-                server.Stop();
+                Shutdown();
+                base.OnStop();
             }
             catch (Exception ex)
             {
@@ -62,10 +79,19 @@ namespace DnsDirector.Service
             }
         }
 
+        private void Shutdown()
+        {
+            log.Debug("Shutdown()");
+            network.RevertInterfaces();
+            server.Stop();
+        }
+
         private Task StopService()
         {
+            log.Debug("StopService()");
             return Task.Run(() =>
             {
+                if (!Program.IsService) return;
                 try
                 {
                     Stop();

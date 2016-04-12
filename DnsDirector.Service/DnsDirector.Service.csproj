@@ -85,7 +85,6 @@
     </Compile>
     <Compile Include="Network.cs" />
     <Compile Include="Router.cs" />
-    <Compile Include="TestNetwork.cs" />
     <Compile Include="Service.cs">
       <SubType>Component</SubType>
     </Compile>

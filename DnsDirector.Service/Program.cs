@@ -15,10 +15,69 @@ namespace DnsDirector.Service
         private static readonly ILog log = LogManager.GetLogger(typeof(Program));
         private static readonly string log4netConfigFile = "DnsDirector.Service.log4net.xml";
 
+        public static bool IsService { get; private set; }
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         static void Main(string[] args)
+        {
+            ConfigureLog();
+
+            log.Debug($"Main({string.Join(", ", args.Select(arg => $"\"{arg}\""))})");
+
+            try
+            {
+                Run(args);
+            }
+            catch (Exception ex)
+            {
+                log.Fatal("Uncaught top level exception.", ex);
+                Environment.Exit(-1);
+            }
+
+            log.Debug("Main: void");
+        }
+
+        private static void Run(string[] args)
+        {
+            IsService = false;
+            var svc = new Service();
+            if (args.Any())
+            {
+                HandleArgs(args, svc);
+            }
+            else
+            {
+                IsService = true;
+                ServiceBase.Run(svc);
+            }
+        }
+
+        private static void HandleArgs(string[] args, Service svc)
+        {
+            if (args.Length != 1)
+            {
+                Help();
+                throw new ArgumentException($"Unexpected args: {string.Join(", ", args.Select(arg => $"\"{arg}\""))}");
+            }
+            else
+            {
+                switch (args[0])
+                {
+                    case "--help":
+                        Help();
+                        break;
+                    case "--console":
+                        svc.ConsoleStart();
+                        break;
+                    default:
+                        Help();
+                        throw new ArgumentException($"Unexpected args: \"{args[0]}\"");
+                }
+            }
+        }
+
+        private static void ConfigureLog()
         {
             try
             {
@@ -30,22 +89,18 @@ namespace DnsDirector.Service
                 BasicConfigurator.Configure();
                 log.Error($"Unable to configure log4net with file: {log4netConfigFile}, falling back to console.", ex);
             }
+        }
 
-            log.Debug($"Main({string.Join(", ", args.Select(arg => $"\"{arg}\""))})");
-
-            try
-            {
-                var svc = new Service();
-                //ServiceBase.Run(svc);
-                svc.ConsoleStart();
-            }
-            catch (Exception ex)
-            {
-                log.Fatal("Uncaught top level exception.", ex);
-                throw; // should this be here?
-            }
-
-            log.Debug("Main: void");
+        static void Help()
+        {
+            Console.WriteLine("DnsDirector Service");
+            Console.WriteLine("Usage:");
+            Console.WriteLine("\tDnsDirector.Service.exe --help");
+            Console.WriteLine("\t\tShow this help message.");
+            Console.WriteLine("\tDnsDirector.Service.exe --console");
+            Console.WriteLine("\t\tRun in the foreground with a console.");
+            Console.WriteLine("\tDnsDirector.Service.exe");
+            Console.WriteLine("\t\tRun as a Windows service. (Not from command prompt.)");
         }
     }
 }
