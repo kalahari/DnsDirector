@@ -1,21 +1,27 @@
 ﻿# Configuration for the DnsDirector service
 
-# Should a widely know set of public DNS servers
-# handle all requests not matched in routes?
+# Use a widely know set of public DNS servers
+# handle all requests not matched in routes.
+# Current list is servers from Google and Level 3.
+# Only set this to 'true' if you don't want to
+# use your system confgiured DNS servers at all.
 usePublicDefaultServers: false
 
 # Provide your own list of DNS server to
-# handle all requests not matched in routes
+# handle all requests not matched in routes.
+# Only define this if you don't want to use
+# your system confgiured DNS servers at all.
 # defaultServers:
 #   - '8.8.8.8'
 #   - '8.8.4.4'
 
-# override the DNS server used by domain suffix
-# will only match whole parts of the domain suffx
-# e.g. bar.example.com does not match foobar.example.com
-# but example.com does match foobar.example.com
-# records are matched descending key length order
-# so always more specific entries first
+# Override the DNS server used by domain suffix.
+# Will only match whole parts of the domain suffx,
+# e.g. a query for the name 'foobar.example.com'
+# does not match a route for 'bar.example.com', but
+# it does match a route for 'example.com'.
+# Records are matched from most specific to least,
+# the order in this file is not relevant.
 routes:
   bar.example.com: ['4.2.2.1', '4.2.2.2']
   example.com: ['4.2.2.3', '4.2.2.4']

@@ -117,9 +117,9 @@ namespace DnsDirector.Service
                     .ToArray();
                 var result = (uint)adapter.InvokeMethod("SetDNSServerSearchOrder", param, null)["ReturnValue"];
                 log.Debug($"DNSServerSearchOrder got result: {result}");
-                if(result != 0)
+                if (result != 0)
                 {
-                    var ex = new Exception($"DNSServerSearchOrder got result: {result}, expected: 0");
+                    var ex = new Exception($"DNSServerSearchOrder got result: {result}, expected: 0, see: https://msdn.microsoft.com/en-us/library/windows/desktop/aa393295");
                     ex.Data.Add("ReturnValue", result);
                     throw ex;
                 }
