@@ -25,20 +25,18 @@ namespace DnsDirector.Service
             IPAddress.Parse("4.2.2.1"), // Level 3
         }.AsReadOnly();
 
-        private List<IPAddress> defaultDnsServers = new List<IPAddress>();
-        private Dictionary<string, List<IPAddress>> dnsRoutes = new Dictionary<string, List<IPAddress>>();
         private readonly FileSystemWatcher configFileWatcher;
         private bool configured = false;
 
-        public bool UsePublicDefaultServers { get; protected set; }
+        public bool UsePublicDefaultServers { get; protected set; } = false;
+        public List<IPAddress> DefaultDnsServers { get; protected set; } = new List<IPAddress>();
+        public Dictionary<string, List<IPAddress>> DnsRoutes { get; protected set; } = new Dictionary<string, List<IPAddress>>();
 
         public Config()
         {
             configFileWatcher = new FileSystemWatcher(".", configFile);
             configFileWatcher.Changed += ConfigFileWatcher_Changed;
             configFileWatcher.EnableRaisingEvents = true;
-            UsePublicDefaultServers = false;
-            UpdateConfig();
         }
 
         private void ConfigFileWatcher_Changed(object sender, FileSystemEventArgs e)
@@ -51,7 +49,7 @@ namespace DnsDirector.Service
 
         }
 
-        private void UpdateConfig()
+        public void UpdateConfig()
         {
             log.Info($"Updating config from file: {configFile}");
             var changed = false;
@@ -69,7 +67,7 @@ namespace DnsDirector.Service
                 log.Info($"Use public default servers: {data.UsePublicDefaultServers} (was: {UsePublicDefaultServers})");
                 var newDefaultServers = new List<IPAddress>();
                 data.DefaultServers = data.DefaultServers ?? new List<string>();
-                log.Info($"Default servers: {string.Join(", ", data.DefaultServers)} (was: {string.Join(", ", defaultDnsServers)})");
+                log.Info($"Default servers: {string.Join(", ", data.DefaultServers)} (was: {string.Join(", ", DefaultDnsServers)})");
                 newDefaultServers.AddRange(data.DefaultServers.Select(s => IPAddress.Parse(s)));
                 var newRoutes = new Dictionary<string, List<IPAddress>>();
                 foreach(var key in data.Routes.Keys)
@@ -80,7 +78,7 @@ namespace DnsDirector.Service
 
                 UsePublicDefaultServers = data.UsePublicDefaultServers;
                 changed = true;
-                defaultDnsServers = newDefaultServers;
+                DefaultDnsServers = newDefaultServers;
                 
                 configured = true;
             }

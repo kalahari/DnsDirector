@@ -13,14 +13,14 @@ namespace DnsDirector.Service
     public class Service : ServiceBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(Service));
-        private readonly Server server;
-        private readonly Network network;
+        private Config config;
+        private Server server;
+        private Network network;
+        private Router router;
 
         public Service()
         {
             log.Debug("new Service()");
-            server = new Server();
-            network = new Network();
         }
 
         public void ConsoleStart()
@@ -31,15 +31,51 @@ namespace DnsDirector.Service
 
         protected override void OnStart(string[] args)
         {
-            log.Info($"OnStart({(args == null ? "" : string.Join(", ", args.Select(arg => $"\"{arg}\"")))})");
-            server.Start();
-            network.PollInterfaces();
+            try
+            {
+                log.Info($"OnStart({(args == null ? "" : string.Join(", ", args.Select(arg => $"\"{arg}\"")))})");
+                config = config ?? new Config();
+                config.UpdateConfig();
+                server = server ?? new Server();
+                server.Start();
+                network = network ?? new Network();
+                network.PollInterfaces();
+            }
+            catch (Exception ex)
+            {
+                log.Fatal($"Error starting service", ex);
+                StopService();
+            }
         }
 
         protected override void OnStop()
         {
             log.InfoFormat("OnStop()");
-            server.Stop();
+            try
+            {
+                server.Stop();
+            }
+            catch (Exception ex)
+            {
+                log.Fatal("Exception in service stop, terminating!", ex);
+                Environment.Exit(-1);
+            }
+        }
+
+        private Task StopService()
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    Stop();
+                }
+                catch(Exception ex)
+                {
+                    log.Fatal("Exception stopping service, terminating!", ex);
+                    Environment.Exit(-1);
+                }
+            });
         }
     }
 }
