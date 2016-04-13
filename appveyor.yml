@@ -244,7 +244,7 @@ artifacts:
   #- path: out\*.nupkg
 
   - path: DnsDirector.zip
-    name: DnsDirector-$(version)_$(configuration)
+    name: DnsDirector-$(APPVEYOR_BUILD_VERSION)_$(configuration)
 
 
 
