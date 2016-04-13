@@ -54,6 +54,9 @@
   <PropertyGroup>
     <StartupObject>DnsDirector.Service.Program</StartupObject>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="ARSoft.Tools.Net, Version=2.2.4.0, Culture=neutral, PublicKeyToken=1940454cd762ec57, processorArchitecture=MSIL">
       <HintPath>..\packages\ARSoft.Tools.Net.2.2.4\lib\net45\ARSoft.Tools.Net.dll</HintPath>
@@ -96,6 +99,7 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="app.manifest" />
     <None Include="DnsDirectorRoutes.yml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
