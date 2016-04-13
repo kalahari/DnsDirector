@@ -96,7 +96,7 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="DnsDirectorRoutes.yaml">
+    <None Include="DnsDirectorRoutes.yml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />

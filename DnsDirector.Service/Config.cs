@@ -14,7 +14,7 @@ namespace DnsDirector.Service
     public class Config
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(Config));
-        private static readonly string configFile = "DnsDirectorRoutes.yaml";
+        private static readonly string configFile = "DnsDirectorRoutes.yml";
         public static readonly IList<IPAddress> PublicDnsServers = new List<IPAddress>()
         {
             IPAddress.Parse("4.2.2.4"), // Level 3
