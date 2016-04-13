@@ -21,6 +21,10 @@ namespace DnsDirector.Service
         /// </summary>
         static void Main(string[] args)
         {
+            // make sure we are running in the right place
+            // http://haacked.com/archive/2004/06/29/current-directory-for-windows-service-is-not-what-you-expect.aspx/
+            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+
             ConfigureLog();
 
             log.Debug($"Main({string.Join(", ", args.Select(arg => $"\"{arg}\""))})");
