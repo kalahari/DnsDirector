@@ -178,9 +178,9 @@ before_build:
 
 # scripts to run after build
 after_build:
-  - cmd /c "cd DnsDirector.Service\bin && 7z a ..\..\DnsDirector-$(version)_$(configuration).zip $(configuration) || exit /b 1"
-  - 7z a DnsDirector-$(version)_$(configuration).zip LICENSE
-  - 7z a DnsDirector-$(version)_$(configuration).zip README.md
+  - cmd /c "cd DnsDirector.Service\bin && 7z a ..\..\DnsDirector-%version%_%configuration%.zip $(configuration) || exit /b 1"
+  - 7z a DnsDirector-%version%_%configuration%.zip LICENSE
+  - 7z a DnsDirector-%version%_%configuration%.zip README.md
 
 # to run your custom scripts instead of automatic MSBuild
 #build_script:
