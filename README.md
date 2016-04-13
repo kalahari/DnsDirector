@@ -11,7 +11,7 @@ Inspired by [`/etc/router`](http://hints.macworld.com/article.php?story=20040629
 1. Extract the ZIP archive to your preferred install location. I like `C:\Tools\DnsDirector`.
 1. Windows does not trust the executable by defalt because it is not code signed, you will need to unblock it.
   1. Right click on `DnsDirector.Service.exe` and select 'Properties'. ![Properties](https://raw.githubusercontent.com/wiki/kalahari/DnsDirector/img/DnsDirector_Unblock_1.png)
-  1. Press the 'Unblock' button, and then press 'OK'. ![Unblock](https://raw.githubusercontent.com/wiki/kalahari/DnsDirector/img/DnsDirector_Unblock_2.png)
+  1. Press the 'Unblock' button, and then press 'OK'. **If you don't see the 'Unblock' button, just press 'OK'.** ![Unblock](https://raw.githubusercontent.com/wiki/kalahari/DnsDirector/img/DnsDirector_Unblock_2.png)
 1. Now run the service install command script as administrator. ![Install](https://raw.githubusercontent.com/wiki/kalahari/DnsDirector/img/DnsDirector_Install.png)
 
 ## Configuration
