@@ -178,7 +178,7 @@ before_build:
 
 # scripts to run after build
 after_build:
-  - cmd /c "cd DnsDirector.Service\bin && 7z a ..\..\DnsDirector.zip %CONFIGURATION% || exit /b 1"
+  - cmd /c "cd DnsDirector.Service\bin\%CONFIGURATION% && 7z a ..\..\..\DnsDirector.zip *.* || exit /b 1"
   - 7z a DnsDirector.zip LICENSE
   - 7z a DnsDirector.zip README.md
 
@@ -329,13 +329,13 @@ deploy:
   #  artifact: MyPackage.nupkg
 
   # Deploy to GitHub Releases
-  - provider: GitHub
-    #artifact: /.*\.nupkg/           # upload all NuGet packages to release assets
-    draft: false
-    prerelease: false
-    on:
-      branch: master                # release from master branch only
-      appveyor_repo_tag: true       # deploy on tag push only
+  #- provider: GitHub
+  #  #artifact: /.*\.nupkg/           # upload all NuGet packages to release assets
+  #  draft: false
+  #  prerelease: false
+  #  on:
+  #    branch: master                # release from master branch only
+  #    appveyor_repo_tag: true       # deploy on tag push only
 
   # Deploying to a named environment
   #- provider: Environment
