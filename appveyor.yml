@@ -374,7 +374,7 @@ deploy:
 #         notifications           #
 #---------------------------------#
   
-#notifications:
+notifications:
 
   # Email
   #- provider: Email
@@ -393,8 +393,8 @@ deploy:
   #  template: "{message}, {commitId}, ..."
 
   # Slack
-  #- provider: Slack
-  #  incoming_webhook: http://incoming-webhook-url
+  - provider: Slack
+    incoming_webhook:  https://hooks.slack.com/services/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
 
   # ...or using auth token
 
