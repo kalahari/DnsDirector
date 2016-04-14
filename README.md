@@ -14,7 +14,7 @@ Inspired by [`/etc/router`](http://hints.macworld.com/article.php?story=20040629
 1. Windows might not trust the executable by default because it is not code signed, and you may need to unblock it.
   1. Right click on `DnsDirector.Service.exe` and select 'Properties'. ![Properties](https://raw.githubusercontent.com/wiki/kalahari/DnsDirector/img/DnsDirector_Unblock_1.png)
   1. Press the 'Unblock' button, and then press 'OK'. **If you don't see the 'Unblock' button, just press 'OK'.** ![Unblock](https://raw.githubusercontent.com/wiki/kalahari/DnsDirector/img/DnsDirector_Unblock_2.png)
-1. Now run the service install command script as administrator. ![Install](https://raw.githubusercontent.com/wiki/kalahari/DnsDirector/img/DnsDirector_Install.png)
+1. Now run the service install command script as administrator. (The install script only works if you run it from the DnsDirector directory. So if you are installing from an admin command prompt, be sure to `cd` to that directory first.) ![Install](https://raw.githubusercontent.com/wiki/kalahari/DnsDirector/img/DnsDirector_Install.png)
 
 ## Configuration
 All configuration is in `DnsDirectorRoutes.yaml`
