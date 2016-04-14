@@ -4,13 +4,13 @@
 # handle all requests not matched in routes.
 # Current list is servers from Google and Level 3.
 # Only set this to 'true' if you don't want to
-# use your system confgiured DNS servers at all.
+# use your system configured DNS servers at all.
 usePublicDefaultServers: false
 
 # Provide your own list of DNS server to
 # handle all requests not matched in routes.
 # Only define this if you don't want to use
-# your system confgiured DNS servers at all.
+# your system configured DNS servers at all.
 # defaultServers:
 #   - '8.8.8.8'
 #   - '8.8.4.4'
