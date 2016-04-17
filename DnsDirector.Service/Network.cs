@@ -1,14 +1,11 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net.NetworkInformation;
-using log4net;
-using System.Net;
 using System.Management;
-using YamlDotNet.Serialization;
-using System.IO;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Threading.Tasks;
 
 namespace DnsDirector.Service
 {
