@@ -1,5 +1,12 @@
 ﻿# Configuration for the DnsDirector service
 
+# If your network is configured automatically,
+# but your DNS servers are configured manually,
+# set this option to 'true'. This would be an
+# unusual configuration. DnsDirector is unable
+# to detect this situation on its own.
+dhcpWithStaticDns: false
+
 # Use a widely know set of public DNS servers
 # handle all requests not matched in routes.
 # Current list is servers from Google and Level 3.
@@ -11,9 +18,9 @@ usePublicDefaultServers: false
 # handle all requests not matched in routes.
 # Only define this if you don't want to use
 # your system configured DNS servers at all.
-# defaultServers:
-#   - '8.8.8.8'
-#   - '8.8.4.4'
+#defaultServers:
+#  - '8.8.8.8'
+#  - '8.8.4.4'
 
 # Override the DNS server used by domain suffix.
 # Will only match whole parts of the domain suffx,

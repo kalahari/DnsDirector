@@ -28,6 +28,7 @@ namespace DnsDirector.Service
         private readonly FileSystemWatcher configFileWatcher;
         private bool configured = false;
 
+        public bool DhcpWithStaticDns { get; protected set; } = false;
         public bool UsePublicDefaultServers { get; protected set; } = false;
         public List<IPAddress> DefaultDnsServers { get; protected set; } = new List<IPAddress>();
         public Dictionary<string, List<IPAddress>> DnsRoutes { get; protected set; } = new Dictionary<string, List<IPAddress>>();
@@ -63,7 +64,7 @@ namespace DnsDirector.Service
                     data = dezer.Deserialize<ConfigData>(new StreamReader(reader));
                 }
                 log.Debug("Read new config from file");
-
+                log.Info($"DHCP with static DNS servers: {data.DhcpWithStaticDns} (was: {DhcpWithStaticDns})");
                 log.Info($"Use public default servers: {data.UsePublicDefaultServers} (was: {UsePublicDefaultServers})");
                 var newDefaultServers = new List<IPAddress>();
                 data.DefaultServers = data.DefaultServers ?? new List<string>();
@@ -75,7 +76,7 @@ namespace DnsDirector.Service
                     log.Info($"Servers for: {key} [{string.Join(", ", data.Routes[key])}]");
                     newRoutes.Add(key.ToLowerInvariant(), data.Routes[key].Select(s => IPAddress.Parse(s)).ToList());
                 }
-
+                DhcpWithStaticDns = data.DhcpWithStaticDns;
                 UsePublicDefaultServers = data.UsePublicDefaultServers;
                 changed = true;
                 DefaultDnsServers = newDefaultServers;
@@ -91,6 +92,7 @@ namespace DnsDirector.Service
 
         class ConfigData
         {
+            public bool DhcpWithStaticDns { get; set; }
             public bool UsePublicDefaultServers { get; set; }
             public List<string> DefaultServers { get; set; }
             public Dictionary<string, List<string>> Routes { get; set; }

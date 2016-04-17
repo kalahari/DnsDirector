@@ -7,64 +7,151 @@ using System.Net.NetworkInformation;
 using log4net;
 using System.Net;
 using System.Management;
+using YamlDotNet.Serialization;
+using System.IO;
 
 namespace DnsDirector.Service
 {
     public class Network
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(Network));
+        private readonly Config config;
+        private bool changeActive = true;
+        private Action<Exception> eventException;
         public List<IPAddress> DefaultServers { get; protected set; } = new List<IPAddress>();
-        //private Dictionary<uint, string> setDnsResultValues;
 
-        public Network()
+        public Network(Config config, Action<Exception> eventException)
         {
-            log.Debug("Network()");
+            log.Debug("new Network()");
+            this.config = config;
+            this.eventException = eventException;
+        }
+
+        public async Task Start()
+        {
+            log.Debug("Start()");
             NetworkChange.NetworkAvailabilityChanged += Network_NetworkAvailabilityChanged;
             NetworkChange.NetworkAddressChanged += Network_NetworkAddressChanged;
+            changeActive = true;
+            await PollInterfaces();
+        }
+
+        public void Stop()
+        {
+            log.Debug("Stop()");
+            changeActive = false;
+            NetworkChange.NetworkAvailabilityChanged -= Network_NetworkAvailabilityChanged;
+            NetworkChange.NetworkAddressChanged -= Network_NetworkAddressChanged;
+            RevertInterfaces();
         }
 
         private void Network_NetworkAvailabilityChanged(object sender, NetworkAvailabilityEventArgs e)
         {
-            log.Debug("Network_NetworkAvailabilityChanged()");
-            PollInterfaces();
+            log.Info("Network_NetworkAvailabilityChanged()");
+            NetworkChanged();
         }
 
         private void Network_NetworkAddressChanged(object sender, EventArgs e)
         {
-            log.Debug("Network_NetworkAddressChanged()");
-            PollInterfaces();
+            log.Info("Network_NetworkAddressChanged()");
+            NetworkChanged();
         }
 
-        public void PollInterfaces()
+        private void NetworkChanged()
+        {
+            if (!changeActive)
+            {
+                log.Info("Network change reaction disabled.");
+                return;
+            }
+            try
+            {
+                PollInterfaces().Wait();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Unhandled exception on network availability change.", ex);
+                eventException(ex);
+            }
+        }
+
+        public async Task PollInterfaces()
         {
             log.Debug("PollInterfaces()");
-            var newServers = new List<IPAddress>();
-            EachInterface((adapter, dnsResolvers) =>
+            try
             {
-                if (dnsResolvers.Any())
-                {
-                    var notLoopbackServers = dnsResolvers.Where(s => !s.Equals(IPAddress.Loopback));
-                    var newDefaultServers = notLoopbackServers.Where(s => !newServers.Contains<IPAddress>(s));
-                    log.Info($"Adding servers to default group: {string.Join(", ", newDefaultServers)}");
-                    newServers.AddRange(newDefaultServers);
-                    if (!dnsResolvers[0].Equals(IPAddress.Loopback))
+                changeActive = false;
+                if (!config.DhcpWithStaticDns) {
+                    log.Info("Refreshing DHCP DNS resolvers");
+                    var dhcpAdapters = new List<string>();
+                    EachInterface(cfg =>
                     {
-                        ApplyLoopbackResolver(adapter, notLoopbackServers);
+                        if (!cfg.DhcpEnabled)
+                        {
+                            log.Debug("Skipping interface, DHCP not enaled");
+                            return;
+                        }
+                        if (!cfg.Resolvers.Any())
+                        {
+                            log.Debug("Skipping interface, no resolvers");
+                            return;
+                        }
+                        log.Info($"Clearing resolvers on interface");
+                        dhcpAdapters.Add(cfg.Description);
+                        SetDnsResolvers(cfg.Adapter, null);
+                    });
+                    for (var i = 0; i < 100 && dhcpAdapters.Any(); i++)
+                    {
+                        log.Debug($"Reading DHCP resolvers for adapters: {string.Join(", ", dhcpAdapters)}");
+                        await Task.Delay(TimeSpan.FromSeconds(0.1));
+                        EachInterface(cfg =>
+                        {
+                            if (cfg.Resolvers.Any())
+                            {
+                                log.Info($"Mew DHCP resolvers: {string.Join(", ", cfg.Resolvers)}");
+                                dhcpAdapters.Remove(cfg.Description);
+                            }
+                        });
+                    }
+                    if (dhcpAdapters.Any())
+                    {
+                        var ex = new Exception($"Unable to re-establish DHCP resolvers for adapters: {string.Join(", ", dhcpAdapters)}");
+                        log.Error(null, ex);
+                        throw ex;
                     }
                 }
-            });
-            DefaultServers = newServers;
+                var newServers = new List<IPAddress>();
+                EachInterface(cfg =>
+                {
+                    if (cfg.Resolvers.Any())
+                    {
+                        var notLoopbackServers = cfg.Resolvers.Where(s => !s.Equals(IPAddress.Loopback));
+                        var newDefaultServers = notLoopbackServers.Where(s => !newServers.Contains<IPAddress>(s));
+                        log.Info($"Adding servers to default group: {string.Join(", ", newDefaultServers)}");
+                        newServers.AddRange(newDefaultServers);
+                        if (!cfg.Resolvers[0].Equals(IPAddress.Loopback))
+                        {
+                            ApplyLoopbackResolver(cfg.Adapter, notLoopbackServers);
+                        }
+                    }
+                });
+                DefaultServers = newServers;
+            }
+            finally
+            {
+                changeActive = true;
+            }
         }
 
         public void RevertInterfaces()
         {
             log.Debug("RevertInterfaces()");
-            EachInterface((adapter, dnsResolvers) =>
+            EachInterface(cfg =>
             {
-                if (dnsResolvers.Any() && dnsResolvers.First().Equals(IPAddress.Loopback))
+                if (cfg.Resolvers.Any() && cfg.Resolvers.First().Equals(IPAddress.Loopback))
                 {
                     log.Info("Removing loopback as primary DNS server");
-                    SetDnsResolvers(adapter, dnsResolvers.Skip(1));
+                    SetDnsResolvers(cfg.Adapter, cfg.DhcpEnabled && !config.DhcpWithStaticDns ? null : cfg.Resolvers.Skip(1));
                 }
             });
         }
@@ -75,7 +162,7 @@ namespace DnsDirector.Service
             SetDnsResolvers(adapter, new List<IPAddress>() { IPAddress.Loopback }.Concat(notLoopbackServers));
         }
 
-        private void EachInterface(Action<ManagementObject, List<IPAddress>> handleInterface)
+        internal void EachInterface(Action<AdapterConfig> handleInterface)
         {
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa394217%28v=vs.85%29.aspx
             var mc = new ManagementClass("Win32_NetworkAdapterConfiguration");
@@ -97,22 +184,27 @@ namespace DnsDirector.Service
                 var idx = (uint)adapter["Index"];
                 using (LogicalThreadContext.Stacks["NDC"].Push(idx.ToString()))
                 {
-                    log.Info($"Description: {(string)adapter["Description"]}");
+                    var cfg = new AdapterConfig();
+                    cfg.Adapter = adapter;
+                    cfg.Description = (string)adapter["Description"];
+                    log.Info($"Description: {cfg.Description}");
                     var dnsServers = (string[])adapter["DNSServerSearchOrder"] ?? new string[0];
                     log.Debug($"DNS Servers: {string.Join(", ", dnsServers)}");
-                    var serverAddreses = dnsServers.Select(s => IPAddress.Parse(s)).ToList();
-                    handleInterface(adapter, serverAddreses);
+                    cfg.Resolvers = dnsServers.Select(s => IPAddress.Parse(s)).ToList();
+                    cfg.DhcpEnabled = (bool)adapter["DHCPEnabled"];
+                    log.Debug($"DHCP Enabled: {cfg.DhcpEnabled}");
+                    handleInterface(cfg);
                 }
             }
         }
 
-        private void SetDnsResolvers(ManagementObject adapter, IEnumerable<IPAddress> resolvers)
+        internal void SetDnsResolvers(ManagementObject adapter, IEnumerable<IPAddress> resolvers)
         {
             try
             {
-                log.Info($"Setting DNS resolvers: {string.Join(", ", resolvers)}");
+                log.Info($"Setting DNS resolvers: {(resolvers == null ? "null" : string.Join(", ", resolvers))}");
                 var param = adapter.GetMethodParameters("SetDNSServerSearchOrder");
-                param["DNSServerSearchOrder"] = resolvers
+                param["DNSServerSearchOrder"] = resolvers == null ? null : resolvers
                     .Select(a => a.ToString())
                     .ToArray();
                 var result = (uint)adapter.InvokeMethod("SetDNSServerSearchOrder", param, null)["ReturnValue"];
@@ -130,5 +222,13 @@ namespace DnsDirector.Service
                 throw;
             }
         }
+    }
+
+    public class AdapterConfig
+    {
+        public string Description { get; set; }
+        public ManagementObject Adapter { get; set; }
+        public List<IPAddress> Resolvers { get; set; }
+        public bool DhcpEnabled { get; set; }
     }
 }
