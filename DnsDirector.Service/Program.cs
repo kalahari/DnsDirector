@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using log4net;
+using log4net.Config;
+using System;
+using System.IO;
 using System.Linq;
 using System.ServiceProcess;
-using System.Text;
-using System.Threading.Tasks;
-using log4net;
-using log4net.Config;
-using System.IO;
 
 namespace DnsDirector.Service
 {
@@ -21,7 +18,7 @@ namespace DnsDirector.Service
         /// </summary>
         static void Main(string[] args)
         {
-            // make sure we are running in the right place
+            // make sure we aren't digging in the wrong place
             // http://haacked.com/archive/2004/06/29/current-directory-for-windows-service-is-not-what-you-expect.aspx/
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
@@ -66,13 +63,21 @@ namespace DnsDirector.Service
             }
             else
             {
+                Action<Exception> fatalError = ex =>
+                {
+                    log.Fatal("Fatal error", ex);
+                    Environment.Exit(-1);
+                };
                 switch (args[0])
                 {
                     case "--help":
                         Help();
                         break;
                     case "--console":
-                        svc.ConsoleStart();
+                        svc.ConsoleStart(fatalError).Wait();
+                        break;
+                    case "--reset":
+                        svc.Reset(fatalError).Wait();
                         break;
                     default:
                         Help();
@@ -103,6 +108,8 @@ namespace DnsDirector.Service
             Console.WriteLine("\t\tShow this help message.");
             Console.WriteLine("\tDnsDirector.Service.exe --console");
             Console.WriteLine("\t\tRun in the foreground with a console.");
+            Console.WriteLine("\tDnsDirector.Service.exe --reset");
+            Console.WriteLine("\t\tReset any DnsDirector specific network settings.");
             Console.WriteLine("\tDnsDirector.Service.exe");
             Console.WriteLine("\t\tRun as a Windows service. (Not from command prompt.)");
         }

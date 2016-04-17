@@ -16,11 +16,26 @@ Inspired by [`/etc/router`](http://hints.macworld.com/article.php?story=20040629
   1. Press the 'Unblock' button, and then press 'OK'. **If you don't see the 'Unblock' button, just press 'OK'.** ![Unblock](https://raw.githubusercontent.com/wiki/kalahari/DnsDirector/img/DnsDirector_Unblock_2.png)
 1. Now run the service install command script as administrator. (The install script only works if you run it from the DnsDirector directory. So if you are installing from an admin command prompt, be sure to `cd` to that directory first.) ![Install](https://raw.githubusercontent.com/wiki/kalahari/DnsDirector/img/DnsDirector_Install.png)
 
+## Upgrade
+1. Open Administrative Tools -> Services and stop the DnsDirector service, or: `net stop DnsDirector`.
+1. Rename the DnsDirector install directory.
+1. Extract the new version of DnsDirector to a directory with exactly the same path as the old one you just renamed.
+1. Copy config settings in `DnsDirectorRoutes.yml` from the old install to the new. Be aware that the new config file may have new settings not present in the old one.
+1. Start the DnsDirector service.
+1. Remove the old direcctory once you have confimred everything is working as expected.
+
 ## Configuration
 All configuration is in `DnsDirectorRoutes.yaml`
 
 ```yaml
 # Configuration for the DnsDirector service
+
+# If your network is configured automatically,
+# but your DNS servers are configured manually,
+# set this option to 'true'. This would be an
+# unusual configuration. DnsDirector is unable
+# to detect this situation on its own.
+dhcpWithStaticDns: false
 
 # Use a widely know set of public DNS servers
 # handle all requests not matched in routes.
@@ -33,12 +48,12 @@ usePublicDefaultServers: false
 # handle all requests not matched in routes.
 # Only define this if you don't want to use
 # your system configured DNS servers at all.
-# defaultServers:
-#   - '8.8.8.8'
-#   - '8.8.4.4'
+#defaultServers:
+#  - '8.8.8.8'
+#  - '8.8.4.4'
 
 # Override the DNS server used by domain suffix.
-# Will only match whole parts of the domain suffix,
+# Will only match whole parts of the domain suffx,
 # e.g. a query for the name 'foobar.example.com'
 # does not match a route for 'bar.example.com', but
 # it does match a route for 'example.com'.
