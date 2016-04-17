@@ -163,18 +163,10 @@ namespace DnsDirector.Service
         {
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa394217%28v=vs.85%29.aspx
             var mc = new ManagementClass("Win32_NetworkAdapterConfiguration");
-            //if (setDnsResultValues == null)
-            //{
-            //    var qdc = mc.Methods.Cast<MethodData>()
-            //        .Single(md => md.Name == "SetDNSServerSearchOrder")
-            //        .Qualifiers
-            //        .Cast<QualifierData>();
-            //    log.Debug($"SetDNSServerSearchOrder Qualifiers: {string.Join(", ", qdc.Select(q => q.Name))}");
-            //    var keys = (string[])qdc.Single(qd => qd.Name == "ValueMap").Value;
-            //    var vals = (string[])qdc.Single(qd => qd.Name == "Values").Value;
-            //    setDnsResultValues = Enumerable.Range(0, keys.Length).ToDictionary(i => uint.Parse(keys[i]), i => vals[i]);
-            //}
-            var adapterConfigs = mc.GetInstances().Cast<ManagementObject>().Where(ac => (bool)ac["IPEnabled"]).ToList();
+            var adapterConfigs = mc.GetInstances()
+                .Cast<ManagementObject>()
+                .Where(ac => (bool)ac["IPEnabled"])
+                .ToList();
             log.Info($"Iterating {adapterConfigs.Count()} IP enabled interfaces");
             foreach (var adapter in adapterConfigs)
             {
