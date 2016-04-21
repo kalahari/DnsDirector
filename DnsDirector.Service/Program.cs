@@ -24,7 +24,7 @@ namespace DnsDirector.Service
 
             ConfigureLog();
 
-            log.Debug($"Main({string.Join(", ", args.Select(arg => $"\"{arg}\""))})");
+            log.Info($"Main({string.Join(", ", args.Select(arg => $"\"{arg}\""))})");
 
             try
             {
@@ -35,12 +35,12 @@ namespace DnsDirector.Service
                 log.Fatal("Uncaught top level exception.", ex);
                 Environment.Exit(-1);
             }
-
-            log.Debug("Main: void");
+            log.Info("Main: void");
         }
 
         private static void Run(string[] args)
         {
+            log.Debug($"Run({string.Join(", ", args.Select(arg => $"\"{arg}\""))})");
             IsService = false;
             var svc = new Service();
             if (args.Any())
@@ -52,6 +52,7 @@ namespace DnsDirector.Service
                 IsService = true;
                 ServiceBase.Run(svc);
             }
+            log.Debug("Run: void");
         }
 
         private static void HandleArgs(string[] args, Service svc)
@@ -91,6 +92,7 @@ namespace DnsDirector.Service
             try
             {
                 XmlConfigurator.ConfigureAndWatch(new FileInfo(log4netConfigFile));
+                log.Info($"Configured log4net with file: {log4netConfigFile}");
             }
             catch (Exception ex)
             {
@@ -109,7 +111,7 @@ namespace DnsDirector.Service
             Console.WriteLine("\tDnsDirector.Service.exe --console");
             Console.WriteLine("\t\tRun in the foreground with a console.");
             Console.WriteLine("\tDnsDirector.Service.exe --reset");
-            Console.WriteLine("\t\tReset any DnsDirector specific network settings.");
+            Console.WriteLine("\t\tReset any DnsDirector specific network settings and exit.");
             Console.WriteLine("\tDnsDirector.Service.exe");
             Console.WriteLine("\t\tRun as a Windows service. (Not from command prompt.)");
         }

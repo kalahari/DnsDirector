@@ -72,6 +72,7 @@ namespace DnsDirector.Service
                 log.Fatal($"Error starting service", ex);
                 StopService();
             }
+            log.Info("OnStart: void");
         }
 
         private async Task Startup(Action<Exception> fatalError)
@@ -99,6 +100,7 @@ namespace DnsDirector.Service
                 log.Fatal("Exception in service stop, terminating!", ex);
                 Environment.Exit(-1);
             }
+            log.Info("OnStop: void");
         }
 
         private void Shutdown()
@@ -106,24 +108,23 @@ namespace DnsDirector.Service
             log.Debug("Shutdown()");
             network.Stop();
             server.Stop();
+            log.Debug("Shutdown: void");
         }
 
-        private Task StopService()
+        private void StopService()
         {
             log.Debug("StopService()");
-            return Task.Run(() =>
+            if (!Program.IsService) return;
+            try
             {
-                if (!Program.IsService) return;
-                try
-                {
-                    Stop();
-                }
-                catch(Exception ex)
-                {
-                    log.Fatal("Exception stopping service, terminating!", ex);
-                    Environment.Exit(-1);
-                }
-            });
+                Stop();
+            }
+            catch(Exception ex)
+            {
+                log.Fatal("Exception stopping service, terminating!", ex);
+                Environment.Exit(-1);
+            }
+            log.Debug("StopService: void");
         }
     }
 }

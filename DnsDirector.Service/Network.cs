@@ -5,12 +5,15 @@ using System.Linq;
 using System.Management;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Runtime.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DnsDirector.Service
 {
     public class Network
     {
+        private const int MAX_TRIES = 25;
         private static readonly ILog log = LogManager.GetLogger(typeof(Network));
         private readonly Config config;
         private bool changeActive = true;
@@ -112,7 +115,7 @@ namespace DnsDirector.Service
                     }
                     if (dhcpAdapters.Any())
                     {
-                        var ex = new Exception($"Unable to re-establish DHCP resolvers for adapters: {string.Join(", ", dhcpAdapters)}");
+                        var ex = new NetworkException($"Unable to re-establish DHCP resolvers for adapters: {string.Join(", ", dhcpAdapters)}");
                         log.Error(null, ex);
                         throw ex;
                     }
@@ -163,26 +166,46 @@ namespace DnsDirector.Service
         {
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa394217%28v=vs.85%29.aspx
             var mc = new ManagementClass("Win32_NetworkAdapterConfiguration");
-            var adapterConfigs = mc.GetInstances()
-                .Cast<ManagementObject>()
-                .Where(ac => (bool)ac["IPEnabled"])
-                .ToList();
-            log.Info($"Iterating {adapterConfigs.Count()} IP enabled interfaces");
-            foreach (var adapter in adapterConfigs)
+            var tries = 0;
+            var keepTrying = true;
+            while (keepTrying)
             {
-                var idx = (uint)adapter["Index"];
-                using (LogicalThreadContext.Stacks["NDC"].Push(idx.ToString()))
+                try
                 {
-                    var cfg = new AdapterConfig();
-                    cfg.Adapter = adapter;
-                    cfg.Description = (string)adapter["Description"];
-                    log.Info($"Description: {cfg.Description}");
-                    var dnsServers = (string[])adapter["DNSServerSearchOrder"] ?? new string[0];
-                    log.Debug($"DNS Servers: {string.Join(", ", dnsServers)}");
-                    cfg.Resolvers = dnsServers.Select(s => IPAddress.Parse(s)).ToList();
-                    cfg.DhcpEnabled = (bool)adapter["DHCPEnabled"];
-                    log.Debug($"DHCP Enabled: {cfg.DhcpEnabled}");
-                    handleInterface(cfg);
+                    var adapterConfigs = mc.GetInstances()
+                        .Cast<ManagementObject>()
+                        .Where(ac => (bool)ac["IPEnabled"])
+                        .ToList();
+                    log.Info($"Iterating {adapterConfigs.Count()} IP enabled interfaces");
+                    foreach (var adapter in adapterConfigs)
+                    {
+                        var idx = (uint)adapter["Index"];
+                        using (LogicalThreadContext.Stacks["NDC"].Push(idx.ToString()))
+                        {
+                            var cfg = new AdapterConfig();
+                            cfg.Adapter = adapter;
+                            cfg.Description = (string)adapter["Description"];
+                            log.Info($"Description: {cfg.Description}");
+                            var dnsServers = (string[])adapter["DNSServerSearchOrder"] ?? new string[0];
+                            log.Debug($"DNS Servers: {string.Join(", ", dnsServers)}");
+                            cfg.Resolvers = dnsServers.Select(s => IPAddress.Parse(s)).ToList();
+                            cfg.DhcpEnabled = (bool)adapter["DHCPEnabled"];
+                            log.Debug($"DHCP Enabled: {cfg.DhcpEnabled}");
+                            handleInterface(cfg);
+                        }
+                    }
+                    keepTrying = false;
+                }
+                catch (NetworkException ex)
+                {
+                    tries++;
+                    if (tries > MAX_TRIES)
+                    {
+                        log.Error($"Exceeded {MAX_TRIES} tries on EachInterface(), failing.", ex);
+                        throw;
+                    }
+                    log.Error($"Caught exception after {tries} tries on EachInterface(), will retry", ex);
+                    Thread.Sleep(tries * 10);
                 }
             }
         }
@@ -197,10 +220,10 @@ namespace DnsDirector.Service
                     .Select(a => a.ToString())
                     .ToArray();
                 var result = (uint)adapter.InvokeMethod("SetDNSServerSearchOrder", param, null)["ReturnValue"];
-                log.Debug($"DNSServerSearchOrder got result: {result}");
+                log.Debug($"SetDNSServerSearchOrder got result: {result}");
                 if (result != 0)
                 {
-                    var ex = new Exception($"DNSServerSearchOrder got result: {result}, expected: 0, see: https://msdn.microsoft.com/en-us/library/windows/desktop/aa393295");
+                    var ex = new NetworkException($"SetDNSServerSearchOrder got result: {result}, expected: 0, see: https://msdn.microsoft.com/en-us/library/windows/desktop/aa393295");
                     ex.Data.Add("ReturnValue", result);
                     throw ex;
                 }
@@ -219,5 +242,13 @@ namespace DnsDirector.Service
         public ManagementObject Adapter { get; set; }
         public List<IPAddress> Resolvers { get; set; }
         public bool DhcpEnabled { get; set; }
+    }
+
+    public class NetworkException : Exception
+    {
+        public NetworkException() : base() { }
+        public NetworkException(string msg) : base(msg) { }
+        public NetworkException(string msg, Exception inner) : base(msg, inner) { }
+        public NetworkException(SerializationInfo info, StreamingContext ctx) : base(info, ctx) { }
     }
 }
