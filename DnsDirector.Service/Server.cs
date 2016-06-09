@@ -12,7 +12,7 @@ namespace DnsDirector.Service
         private static readonly ILog log = LogManager.GetLogger(typeof(Server));
         private readonly Router router;
 
-        public Server(Router router) : base(IPAddress.Loopback, 3, 1)
+        public Server(Router router) : base(IPAddress.Loopback, 12, 1)
         {
             log.Debug("new Server()");
             this.router = router;
