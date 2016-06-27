@@ -81,7 +81,7 @@ namespace DnsDirector.Service
             config = config ?? new Config();
             network = network ?? new Network(config, fatalError);
             router = router ?? new Router(config, network);
-            server = server ?? new Server(router);
+            server = server ?? new Server(config, router);
             config.UpdateConfig();
             server.Start();
             await network.Start();
