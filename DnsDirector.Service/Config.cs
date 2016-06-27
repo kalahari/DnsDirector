@@ -26,6 +26,7 @@ namespace DnsDirector.Service
         private readonly FileSystemWatcher configFileWatcher;
         private bool configured = false;
 
+        public int MaxConcurrentUdpRequests { get; protected set; } = 25;
         public bool DhcpWithStaticDns { get; protected set; } = false;
         public bool UsePublicDefaultServers { get; protected set; } = false;
         public List<IPAddress> DefaultDnsServers { get; protected set; } = new List<IPAddress>();
