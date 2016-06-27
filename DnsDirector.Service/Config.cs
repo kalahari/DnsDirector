@@ -63,6 +63,7 @@ namespace DnsDirector.Service
                     data = dezer.Deserialize<ConfigData>(new StreamReader(reader));
                 }
                 log.Debug("Read new config from file");
+                log.Info($"Maximum concurrent UDP requests: {data.MaxConcurrentUdpRequests} (was: {MaxConcurrentUdpRequests})");
                 log.Info($"DHCP with static DNS servers: {data.DhcpWithStaticDns} (was: {DhcpWithStaticDns})");
                 log.Info($"Use public default servers: {data.UsePublicDefaultServers} (was: {UsePublicDefaultServers})");
                 var newDefaultServers = new List<IPAddress>();
@@ -75,6 +76,7 @@ namespace DnsDirector.Service
                     log.Info($"Servers for: {key} [{string.Join(", ", data.Routes[key])}]");
                     newRoutes.Add(key.ToLowerInvariant(), data.Routes[key].Select(s => IPAddress.Parse(s)).ToList());
                 }
+                MaxConcurrentUdpRequests = data.MaxConcurrentUdpRequests;
                 DhcpWithStaticDns = data.DhcpWithStaticDns;
                 UsePublicDefaultServers = data.UsePublicDefaultServers;
                 changed = true;
@@ -91,6 +93,7 @@ namespace DnsDirector.Service
 
         class ConfigData
         {
+            public int MaxConcurrentUdpRequests { get; set; }
             public bool DhcpWithStaticDns { get; set; }
             public bool UsePublicDefaultServers { get; set; }
             public List<string> DefaultServers { get; set; }
