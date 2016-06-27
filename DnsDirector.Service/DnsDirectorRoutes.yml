@@ -1,5 +1,15 @@
 ﻿# Configuration for the DnsDirector service
 
+# The maximum number of concurrent DNS requests
+# to handle. Each active request requires a
+# dedicated servicing thread. If the thread
+# pool saturates, DnsDirector must wait for
+# threads to free up before it can respond.
+# Thus it will appear hung momentarily in such
+# a case. Going below ~12 has been known to
+# cause erratic behavior.
+maxConcurrentUdpRequests: 25
+
 # If your network is configured automatically,
 # but your DNS servers are configured manually,
 # set this option to 'true'. This would be an
