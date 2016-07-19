@@ -1,7 +1,7 @@
 # DnsDirector
 [![Build status](https://ci.appveyor.com/api/projects/status/dgbuyqn9e94ri105?svg=true)](https://ci.appveyor.com/project/kalahari/dnsdirector)
 
-DIrect DNS queries to different servers by pattern matching the domain.
+Direct DNS queries to different servers by pattern matching the domain.
 Inspired by [`/etc/router`](http://hints.macworld.com/article.php?story=2004062902195410) in Mac OS.
 
 ## Download
