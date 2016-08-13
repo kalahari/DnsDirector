@@ -398,7 +398,8 @@ notifications:
 
   # Slack
   - provider: Slack
-    incoming_webhook:  https://hooks.slack.com/services/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
+    incoming_webhook:
+      secure: F/HSZqDlRXQgLQjhsMmrkluhvQxM9a7Wg/P0tuAJvjtNejVC5yeLIgEo4XUv33qmhJW+rwT+BN9ThXT2KaTqXViF8fJmh+q7xYubETQKUKs=
 
   # ...or using auth token
 
